@@ -27,7 +27,7 @@ app.get('/health', (req, res) => {
 });
 
 // Routes
-app.get('/api/courses', async (req, res) => {
+app.get('api/courses', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM courses LIMIT 50');
     res.json(result.rows);
@@ -36,7 +36,7 @@ app.get('/api/courses', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
@@ -67,7 +67,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-app.post('/api/auth/signup', async (req, res) => {
+app.post('api/auth/signup', async (req, res) => {
   const { email, fullName, password } = req.body;
   try {
     const hashed = await bcrypt.hash(password, 10);
