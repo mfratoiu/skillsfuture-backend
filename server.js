@@ -4,29 +4,63 @@ const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
+ 
 const app = express();
-
-// CORS - must be first
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'DELETE'],
-  credentials: true
-}));
+ 
+app.use(cors({ origin: '*' }));
 app.use(express.json());
-
-// Database
+ 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
-
+ 
+// Create tables on startup
+async function initDB() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        full_name VARCHAR(255),
+        password_hash VARCHAR(255),
+        user_type VARCHAR(50) DEFAULT 'student',
+        credits INTEGER DEFAULT 1000,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+ 
+      CREATE TABLE IF NOT EXISTS courses (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255),
+        description TEXT,
+        category VARCHAR(100),
+        price INTEGER DEFAULT 0,
+        instructor_id INTEGER,
+        instructor_name VARCHAR(255),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+ 
+      CREATE TABLE IF NOT EXISTS enrollments (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER,
+        course_id INTEGER,
+        enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Database schema ready');
+  } catch (err) {
+    console.error('DB error:', err.message);
+  }
+}
+ 
+initDB();
+ 
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
-
-// Routes
+ 
+// Get courses
 app.get('/api/courses', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM courses LIMIT 50');
@@ -35,7 +69,8 @@ app.get('/api/courses', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
+ 
+// Login
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -66,7 +101,8 @@ app.post('/api/auth/login', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
+ 
+// Signup
 app.post('/api/auth/signup', async (req, res) => {
   const { email, fullName, password } = req.body;
   try {
@@ -86,8 +122,9 @@ app.post('/api/auth/signup', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
+ 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`✅ API running on ${PORT}`);
 });
+ 
