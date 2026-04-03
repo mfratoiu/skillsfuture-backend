@@ -86,6 +86,8 @@ const initDB = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    // Migrations - add columns missing from older deployments
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS organization VARCHAR(255) DEFAULT ''`);
     console.log('✅ Database schema initialized');
   } catch (err) {
     console.error('⚠️  Database init warning:', err.message);
