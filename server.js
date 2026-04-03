@@ -89,6 +89,24 @@ const initDB = async () => {
     // Migrations - add columns missing from older deployments
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS organization VARCHAR(255) DEFAULT ''`);
     console.log('✅ Database schema initialized');
+
+    // Seed demo accounts if they don't exist
+    const bcrypt = require('bcryptjs');
+    const demoAccounts = [
+      { email: 'student@demo.com', full_name: 'Demo Student', password: 'password123', user_type: 'student' },
+      { email: 'trainer@demo.com', full_name: 'Demo Trainer', password: 'password123', user_type: 'trainer' }
+    ];
+    for (const account of demoAccounts) {
+      const existing = await pool.query('SELECT id FROM users WHERE email = $1', [account.email]);
+      if (existing.rows.length === 0) {
+        const hash = await bcrypt.hash(account.password, 10);
+        await pool.query(
+          'INSERT INTO users (email, full_name, password_hash, user_type, organization, credits) VALUES ($1, $2, $3, $4, $5, $6)',
+          [account.email, account.full_name, hash, account.user_type, '', 1000]
+        );
+        console.log('✅ Demo account created:', account.email);
+      }
+    }
   } catch (err) {
     console.error('⚠️  Database init warning:', err.message);
     // Don't crash - try again later
