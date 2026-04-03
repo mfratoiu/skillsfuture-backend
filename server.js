@@ -154,7 +154,13 @@ app.post('/api/auth/signup', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    res.json({ token, user });
+    res.json({ token, user: {
+      id: user.id,
+      email: user.email,
+      fullName: user.full_name,
+      userType: user.user_type,
+      credits: user.credits
+    } });
   } catch (err) {
     console.error('Signup error:', err);
     res.status(400).json({ error: err.message || 'Signup failed' });
